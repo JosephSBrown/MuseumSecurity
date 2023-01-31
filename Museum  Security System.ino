@@ -47,6 +47,8 @@ void setup()
   lcd.createChar(1, unlock);
   tone(3, 1000, 200);
   dht.begin();
+  pinMode(22, INPUT);
+  pinMode(23, OUTPUT);
   Serial.begin(9600);
   SPI.begin();
   mfrc522.PCD_Init();	
@@ -66,6 +68,22 @@ void loop()
     delay(5000);
     TemperatureScreen();
     delay(3000);
+
+     // Clears the trigPin
+    digitalWrite(23, LOW);
+    delayMicroseconds(2);
+    // Sets the trigPin on HIGH state for 10 micro seconds
+    digitalWrite(23, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(23, LOW);
+    // Reads the echoPin, returns the sound wave travel time in microseconds
+    long duration = pulseIn(22, HIGH);
+    // Calculating the distance
+    int distance = duration * 0.034 / 2;
+    // Prints the distance on the Serial Monitor
+    Serial.print("Distance: ");
+    Serial.println(distance);
+
     return;
   }
 
@@ -87,6 +105,7 @@ void loop()
   Serial.println();
   Serial.print("Message : ");
   content.toUpperCase();
+  
   if (content.substring(1) == "FC FA 68 CD") //change here the UID of the card/cards that you want to give access
   {
     Serial.println("Authorized access");
