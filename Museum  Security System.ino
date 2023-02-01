@@ -84,6 +84,31 @@ void loop()
     Serial.print("Distance: ");
     Serial.println(distance);
 
+    if  (distance <= 30)
+    {
+      while  (distance <= 30)
+      {
+        tooclose();
+        digitalWrite(23, LOW);
+        delayMicroseconds(2);
+        // Sets the trigPin on HIGH state for 10 micro seconds
+        digitalWrite(23, HIGH);
+        delayMicroseconds(10);
+        digitalWrite(23, LOW);
+        // Reads the echoPin, returns the sound wave travel time in microseconds
+        long duration = pulseIn(22, HIGH);
+        // Calculating the distance
+        int distance = duration * 0.034 / 2;
+        // Prints the distance on the Serial Monitor
+        Serial.print("Distance: ");
+        Serial.println(distance);
+        if (distance > 30)
+        {
+          return;
+        }
+      }
+    }
+
     return;
   }
 
@@ -190,6 +215,23 @@ void deny()
   lcd.clear();
   lcd.setCursor(1, 0);
   lcd.print("Access Denied!");
+  digitalWrite(6, HIGH);
+  digitalWrite(5, LOW);
+  tone(3,440,1000);
+  delay(500);
+  digitalWrite(6, LOW);
+  delay(500);
+  digitalWrite(6, HIGH);
+  delay(500);
+  digitalWrite(6, LOW);
+  delay(500);
+}
+
+void tooclose()
+{
+  lcd.clear();
+  lcd.setCursor(1, 0);
+  lcd.print("Too Close!");
   digitalWrite(6, HIGH);
   digitalWrite(5, LOW);
   tone(3,440,1000);
