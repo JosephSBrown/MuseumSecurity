@@ -2,13 +2,18 @@
 #include "DHT.h"
 #include <MFRC522.h>
 #include <SPI.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
 
 LiquidCrystal lcd(7,8,9,10,11,12);
+LiquidCrystal_I2C lcd2 = LiquidCrystal_I2C(0x27, 20, 4);
 
 #define DHTTYPE DHT11
 #define DHTPIN A0
 #define RST_PIN 2
 #define SS_PIN 53
+
+int sensorPin = 36;
 
 DHT dht = DHT(DHTPIN,  DHTTYPE);
 MFRC522 mfrc522(SS_PIN, RST_PIN);
@@ -42,6 +47,9 @@ void setup()
   pinMode(6, OUTPUT);
   pinMode(5, OUTPUT);
   pinMode(4, INPUT);
+  pinMode(26, OUTPUT);
+  pinMode(28, OUTPUT);
+  pinMode(30, OUTPUT);
   lcd.begin(16,2);
   lcd.createChar(0, lock);
   lcd.createChar(1, unlock);
@@ -49,24 +57,30 @@ void setup()
   dht.begin();
   pinMode(22, INPUT);
   pinMode(23, OUTPUT);
+  pinMode(38, OUTPUT);
   Serial.begin(9600);
   SPI.begin();
   mfrc522.PCD_Init();	
   mfrc522.PCD_DumpVersionToSerial();
 	Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
+  lcd2.init();
+  lcd2.backlight();
 }
 
 void loop() 
 {
   // put your main code here, to run repeatedly:
-   
+   int light = digitalRead(sensorPin);
+
   if ( ! mfrc522.PICC_IsNewCardPresent())
   {
-    digitalWrite(6, LOW);
-    digitalWrite(5, HIGH);
+    digitalWrite(38, LOW); //relay
+    digitalWrite(6, LOW); //red LED
+    digitalWrite(5, HIGH); //green LED
     LockedStatusScreen();
-    delay(5000);
     TemperatureScreen();
+    delay(5000);
+    digitalWrite(38, HIGH); //relay
     delay(3000);
 
      // Clears the trigPin
@@ -83,6 +97,8 @@ void loop()
     // Prints the distance on the Serial Monitor
     Serial.print("Distance: ");
     Serial.println(distance);
+    Serial.print("Light: ");    
+    Serial.println(light);
 
     if  (distance <= 30)
     {
@@ -109,6 +125,15 @@ void loop()
       }
     }
 
+    if (light == 0)
+    {
+      while (light == 0)
+      {
+          flashcaught();
+          return;
+      }
+    }
+    
     return;
   }
 
@@ -161,6 +186,7 @@ void loop()
       digitalWrite(5, LOW);
       delay(1000);
     }
+    engaged();
   }
  else   
  {
@@ -188,16 +214,29 @@ void TemperatureScreen()
   int temp = round(t);
   float h = dht.readHumidity();
   int humid = round(h);
+  Serial.println(temp);
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Temp: ");
-  lcd.print(temp);
-  lcd.print((char)223);
-  lcd.setCursor(0, 1);
-  lcd.print("Humidity: ");
-  lcd.print(humid);
-  lcd.print("%");
+  lcd2.clear();
+  lcd2.setCursor(0, 0);
+  lcd2.print("Temp: ");
+  lcd2.print(temp);
+  lcd2.print((char)223);
+  lcd2.setCursor(0, 1);
+  lcd2.print("Humidity: ");
+  lcd2.print(humid);
+  lcd2.print("%");
+
+  if  (temp == 24 || temp == 20)
+    {
+      while  (temp == 30 || temp == 20)
+      {
+        temperaturechange(temp);
+        if (temp == 20)
+        {
+          return;
+        }
+      }
+    }
 }
 
 void toneaccept()
@@ -229,18 +268,73 @@ void deny()
 
 void tooclose()
 {
+  lcd2.clear();
+  TemperatureScreen();
+  lcd2.setCursor(0, 3);
+  lcd2.print("Too Close!");
+  setColour(0, 0, 255);  
+  delay(500);
+  setColour(0, 0, 0);
+  delay(500);
+  setColour(0, 0, 255);  
+  delay(500);
+  setColour(0, 0, 0);
+  delay(500);
+}
+
+void flashcaught()
+{
+  lcd2.clear();
+  TemperatureScreen();
+  lcd2.setCursor(0, 3);
+  lcd2.print("Flash Detected!");
+  setColour(255,105,180);  
+  delay(500);
+  setColour(0, 0, 0);
+  delay(500);
+  setColour(255,105,180);  
+  delay(500);
+  setColour(0, 0, 0);
+  delay(500);
+  setColour(255,105,180);  
+  delay(500);
+  setColour(0, 0, 0);
+  delay(500);
+  setColour(255,105,180);  
+  delay(500);
+  setColour(0, 0, 0);
+  delay(500);
+}
+
+void temperaturechange(int temp)
+{
   lcd.clear();
   lcd.setCursor(1, 0);
-  lcd.print("Too Close!");
-  digitalWrite(6, HIGH);
-  digitalWrite(5, LOW);
-  tone(3,440,1000);
+  lcd.print("Too Hot/Too Cold!");
+  lcd.setCursor(1, 1);
+  lcd.print(temp);
+  setColour(255, 255, 0);  
   delay(500);
-  digitalWrite(6, LOW);
+  setColour(0, 0, 0);
   delay(500);
-  digitalWrite(6, HIGH);
+  setColour(255, 255, 0);  
   delay(500);
-  digitalWrite(6, LOW);
+  setColour(0, 0, 0);
+  delay(500);
+}
+
+void touchortilt()
+{
+  lcd.clear();
+  lcd.setCursor(1, 0);
+  lcd.print("Exhibit has been Touched/Tilted");
+  setColour(0, 0, 255);  
+  delay(500);
+  setColour(0, 0, 0);
+  delay(500);
+  setColour(0, 0, 255);  
+  delay(500);
+  setColour(0, 0, 0);
   delay(500);
 }
 
@@ -248,4 +342,10 @@ void engaged()
 {
   tone(3, 1000, 250);
   delay(1000);
+}
+
+void setColour(int redValue, int greenValue, int blueValue) {
+  analogWrite(26, redValue);
+  analogWrite(28, greenValue);
+  analogWrite(30, blueValue);
 }
