@@ -15,6 +15,8 @@ LiquidCrystal_I2C lcd2 = LiquidCrystal_I2C(0x27, 20, 4);
 
 int sensorPin = 36;
 
+int relaystate = 0;
+
 DHT dht = DHT(DHTPIN,  DHTTYPE);
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
@@ -74,13 +76,13 @@ void loop()
 
   if ( ! mfrc522.PICC_IsNewCardPresent())
   {
-    digitalWrite(38, LOW); //relay
+    digitalWrite(38, relaystate); //relay
     digitalWrite(6, LOW); //red LED
     digitalWrite(5, HIGH); //green LED
     LockedStatusScreen();
     TemperatureScreen();
     delay(5000);
-    digitalWrite(38, HIGH); //relay
+    //digitalWrite(38, HIGH); //relay
     delay(3000);
 
      // Clears the trigPin
@@ -127,8 +129,17 @@ void loop()
 
     if (light == 0)
     {
+      if (relaystate == 0)
+      {
+        relaystate = 1;
+      }
+      else if (relaystate == 1)
+      {
+        relaystate = 0;        
+      }
       while (light == 0)
       {
+          
           flashcaught();
           return;
       }
