@@ -4,6 +4,7 @@
 #include <SPI.h>
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
+#include <Servo.h>
 
 LiquidCrystal lcd(7,8,9,10,11,12);
 LiquidCrystal_I2C lcd2 = LiquidCrystal_I2C(0x27, 20, 4);
@@ -16,6 +17,8 @@ LiquidCrystal_I2C lcd2 = LiquidCrystal_I2C(0x27, 20, 4);
 int sensorPin = 36;
 
 int relaystate = 0;
+
+Servo myservo;
 
 DHT dht = DHT(DHTPIN,  DHTTYPE);
 MFRC522 mfrc522(SS_PIN, RST_PIN);
@@ -62,11 +65,12 @@ void setup()
   pinMode(38, OUTPUT);
   Serial.begin(9600);
   SPI.begin();
-  mfrc522.PCD_Init();	
+  mfrc522.PCD_Init();  
   mfrc522.PCD_DumpVersionToSerial();
-	Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
+  Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
   lcd2.init();
   lcd2.backlight();
+  myservo.attach(49);
 }
 
 void loop() 
@@ -172,6 +176,8 @@ void loop()
     Serial.println("Authorized access");
     Serial.println();
     toneaccept();
+    myservo.write(90);
+    delay(1000);
 
     int i = 0;
     while (i < 119)
@@ -189,6 +195,7 @@ void loop()
       i++;
       if (mfrc522.PICC_IsNewCardPresent() && i > 5)
       {
+        myservo.write(0);
         engaged();
         return;
       }
@@ -225,6 +232,7 @@ void TemperatureScreen()
   int temp = round(t);
   float h = dht.readHumidity();
   int humid = round(h);
+  Serial.println("Temperature: ");
   Serial.println(temp);
 
   lcd2.clear();
